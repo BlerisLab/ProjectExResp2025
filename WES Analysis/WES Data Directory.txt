@@ -1,0 +1,25 @@
+Patient	File name	Content
+BER002	BER002.hg19_multianno	ANNOVAR Output File All annotated genetic variants of patient BER002
+BER002	BER002-normal-tumor.varScan.output.snp	VarScan Output File  Matched normal-tumor analysis
+BER002	BER002_Germline_detailed	Germline SNPs File
+BER002	BER002_somatic detailed	Somatic SNPs File
+BER003	BER003.hg19_multianno	ANNOVAR Output File All annotated genetic variants of patient BER003
+BER003	BER003-normal-tumor.varScan.output.snp	VarScan Output File  Matched normal-tumor analysis
+BER003	BER003_Germline_detailed	Germline SNPs File
+BER003	BER003_somatic detailed	Somatic SNPs File
+BER006	BER006.hg19_multianno	ANNOVAR Output File All annotated genetic variants of patient BER006
+BER006	BER006-normal-tumor.varScan.output.snp	VarScan Output File  Matched normal-tumor analysis
+BER006	BER006_Germline_detailed	Germline SNPs File
+BER006	BER006_somatic detailed	Somatic SNPs File
+BER011	BER011.hg19_multianno	ANNOVAR Output File All annotated genetic variants of patient BER011
+BER011	BER011-normal-tumor.varScan.output.snp	VarScan Output File  Matched normal-tumor analysis
+BER011	BER011_Germline_detailed	Germline SNPs File
+BER011	BER011_somatic detailed	Somatic SNPs File
+BER012	BER012.hg19_multianno	ANNOVAR Output File All annotated genetic variants of patient BER012
+BER012	BER012-normal-tumor.varScan.output.snp	VarScan Output File  Matched normal-tumor analysis
+BER012	BER012_Germline_detailed	Germline SNPs File
+BER012	BER012_somatic detailed 	Somatic SNPs File
+BER014	BER014.hg19_multianno	ANNOVAR Output File All annotated genetic variants of patient BER014
+BER014	BER014-normal-tumor.varScan.output.snp	VarScan Output File  Matched normal-tumor analysis
+BER014	BER014_Germline_detailed	Germline SNPs File
+BER014	BER014_somatic detailed	Somatic SNPs File
