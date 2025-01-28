@@ -1,0 +1,108 @@
+A. HISAT21 
+hisat2-build /data3/exb/Reference/XXXX_rna.fna reference_index
+hisat2 -p 8 --dta -x /data3/exb/Reference/grch38_tran/genome_tran -1 /data3/exb/ExResponse_RNAseq/130A-1_R1_001.fastq.gz -2 /data3/exb/ExResponse_RNAseq/130A-1_R2_001.fastq.gz -S /data3/exb/hisat2_ExR/130A-1.sam
+samtools sort -@ 8 -o /data3/exb/hisat2_ExR/130A-1_sorted.bam  /data3/exb/hisat2_ExR/130A-1.sam
+B. StringTie1
+stringtie -p 8 -G /data3/exb/Reference/Homo_sapiens.GRCh38.84.gtf -o /data3/exb/stringTie_ExR/130A-1.gtf -l EXRA1 /data3/exb/hisat2_ExR/130A-1_sorted.bam
+stringtie --merge -p 8 -G /data3/exb/Reference/Homo_sapiens.GRCh38.84.gtf -o merged.gtf merged.txt
+C. FeatureCounts2
+featureCounts -T 8 -p -a /data3/exb/Reference/Homo_sapiens.GRCh38.84.gtf -o counts.txt -g gene_name /data3/exb/hisat2_ExR/130A-1_sorted.bam /data3/exb/hisat2_ExR/130A-2_sorted.bam /data3/exb/hisat2_ExR/130A-3_sorted.bam /data3/exb/hisat2_ExR/130G-1_sorted.bam /data3/exb/hisat2_ExR/130G-2_sorted.bam /data3/exb/hisat2_ExR/130G-3_sorted.bam
+D. DESeq23
+library("DESeq2")
+cts <- read.table("counts.txt", header=TRUE , skip=1 , comment.char="#")
+counts <- cts[, -c(2:6)]
+colnames(counts) <- c("Geneid", "130A1", "130A2", "130A3", "130G1", "130G2", "130G3")
+head(counts)
+sample_info <- data.frame(row.names = colnames(counts)[-1], condition = c("A", "A", "A", "G", "G", "G"))
+head(sample_info)
+dds <- DESeqDataSetFromMatrix(countData = counts[, -1], colData = sample_info, design = ~ condition)
+rownames(dds) <- counts$Geneid
+dds <- DESeq(dds)
+res <- results(dds)
+res
+res <- results(dds, name="condition_G_vs_A")
+resultsNames(dds)
+write.csv(res, file = "DESeq2_results_G_vs_A.csv")
+resOrdered <- res[order(res$pvalue),]
+summary(res)
+res05 <- results(dds, alpha=0.05)
+summary(res05)
+
+sum(res05$padj < 0.05, na.rm=TRUE)
+
+significant_results <- res05[!is.na(res05$padj) & res05$padj < 0.05, ] 
+write.csv(significant_results, file = "DESeq2_significant_results_G_vs_A.csv")
+significant_genes <- res[!is.na(res$padj) & res$padj < 0.05 & abs(res$log2FoldChange) > 2, ]
+summary(significant_genes)
+
+write.csv(significant_genes, file = "DESeq2_significant_ LC2_results_G_vs_A.csv")
+R
+library("DESeq2")
+cts <- read.table("counts.txt", header=TRUE , skip=1 , comment.char="#")
+counts <- cts[, -c(2:6)]
+colnames(counts) <- c("Geneid", "130A1", "130A2", "130A3", "130G1", "130G2", "130G3")
+head(counts)
+sample_info <- data.frame(row.names = colnames(counts)[-1], condition = c("A", "A", "A", "G", "G", "G"))
+head(sample_info)
+dds <- DESeqDataSetFromMatrix(countData = counts[, -1], colData = sample_info, design = ~ condition)
+rownames(dds) <- counts$Geneid
+dds <- DESeq(dds)
+norm_counts <- counts(dds, normalized=TRUE)
+write.table(norm_counts, file="DESeq2_normalized_counts_geneids.txt", sep="\t", quote=F, col.names=NA)
+plotMA(res, ylim=c(-7,7))
+
+Volcano Plot 
+volcano_data <- as.data.frame(res)
+volcano_data$Geneid <- rownames(volcano_data)
+volcano_data$log10Padj <- -log10(volcano_data$padj)
+volcano_data <- na.omit(volcano_data[, c("log2FoldChange", "log10Padj", "padj", "Geneid")])
+foldChangeThreshold <- 2
+pValueThreshold <- 0.05
+logPValueThreshold <- -log10(pValueThreshold)
+R
+library(ggplot2)
+library(ggrepel)	
+plot <- ggplot(volcano_data, aes(x = log2FoldChange, y = log10Padj)) +
+  geom_point(aes(color = factor(ifelse(log2FoldChange > foldChangeThreshold & padj < pValueThreshold, "Upregulated",
+                                       ifelse(log2FoldChange < -foldChangeThreshold & padj < pValueThreshold, "Downregulated", "Not Significant"))))) +
+  scale_color_manual(values = c("Upregulated" = "red", "Downregulated" = "royalblue1", "Not Significant" = "grey")) +
+  geom_hline(yintercept = logPValueThreshold, linetype = "dashed") +
+  geom_vline(xintercept = c(-foldChangeThreshold, foldChangeThreshold), linetype = "dashed") +
+  theme_classic() +
+  labs(x = "Log2 Fold Change",
+       y = "-Log10 Adjusted p-value") +
+  guides(color = guide_legend(title = NULL)) +
+  geom_text_repel(data = subset(volcano_data, Geneid %in% c("FAM63A", "PDZK1", "MUC16", "IRF8", "SLC16A1", "OAS2", "SHH", "KLK11", "CASP4", "IGFBP5", "PCDH10", "HLA-DRB1", "DOCK10", "GALNT5", "MUC19", "ADGRL2", "HAPLN1", "PARP10", "ACKR2", "PAX3", "PDE4B", "NEGR1", "IGFL1", "IFI27", "IFI44", "SHISA2", "MUCL1")),
+                  aes(label = Geneid), 
+                  size = 3, 
+                  nudge_y = 0.5,  # Adjust the y nudge if needed
+                  box.padding = 0.5) +
+  geom_segment(data = subset(volcano_data, Geneid %in% c("FAM63A", "PDZK1", "MUC16", "IRF8", "SLC16A1", "OAS2", "SHH", "KLK11", "CASP4", "IGFBP5", "PCDH10", "HLA-DRB1", "DOCK10", "GALNT5", "MUC19", "ADGRL2",  "HAPLN1", "PARP10", "ACKR2", "PAX3", "PDE4B", "NEGR1", "IGFL1", "IFI27", "IFI44", "SHISA2", "MUCL1")),
+               aes(x = log2FoldChange, y = log10Padj, xend = log2FoldChange, yend = log10Padj + 0.5),
+               color = "black", size = 0.8, alpha = 0.8) + 
+scale_y_continuous(breaks = c(-10, 0, 10, 50, 100, 150, 200, 250), labels = c("-10", "0", "10", "50", "100", "150", "200", "250"))
+ggsave("volcano_plot.pdf", plot, width = 8, height = 6, units = "in")
+Clustermap
+R
+library(DESeq2)
+library(pheatmap)
+sig_gene_ids <- rownames(significant_genes)
+rld <- rlog(dds, blind = FALSE)
+norm_counts <- assay(rld)
+sig_norm_counts <- norm_counts[sig_gene_ids, ]
+scaled_counts <- t(scale(t(sig_norm_counts)))
+color_palette <- colorRampPalette(c("blue", "white", "red"))(255)
+pdf("clustermap_significant_genes.pdf", width = 8, height = 14)  
+pheatmap(scaled_counts,
+         cluster_rows = TRUE,
+         cluster_cols = TRUE,
+         show_rownames = FALSE,
+         show_colnames = TRUE,
+         color = color_palette,
+         breaks = seq(-2, 2, length.out = 256))
+dev.off()
+References
+1.	Pertea, M., Kim, D., Pertea, G. M., Leek, J. T. & Salzberg, S. L. Transcript-level expression analysis of RNA-seq experiments with HISAT, StringTie and Ballgown. Nat Protoc 11, 1650–1667 (2016).
+2.	Liao, Y., Smyth, G. K. & Shi, W. featureCounts: an efficient general purpose program for assigning sequence reads to genomic features. Bioinformatics 30, 923–930 (2014).
+3.	Love, M. I., Huber, W. & Anders, S. Moderated estimation of fold change and dispersion for RNA-seq data with DESeq2. Genome Biol 15, 550 (2014).
+ 
